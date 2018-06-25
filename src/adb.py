@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+# coding=utf-8
+
+import functools
+import subprocess
+from io import BytesIO
+
+from PIL import Image
+
+__all__ = ["PyADB"]
+
+_sysrun = functools.partial(
+    subprocess.run,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+
+
+class ADBError(Exception): pass
+
+
+class ConnectionError(ADBError): pass
+
+
+class LongTapError(ADBError): pass
+
+
+class PyADB:
+
+    def __init__(self, device_serial):
+        self.device_serial = device_serial
+
+    def connect(self, ip, port=5555):
+        """连接网络adb调试设备"""
+        cmd = f"adb -s {self.device_serial} connect {ip}:{port}".split()
+        try:
+            result = _sysrun(cmd, timeout=2)
+            returncode = result.returncode
+        except subprocess.TimeoutExpired as e:
+            errmsg = f"Connect {ip}:{port} timeout."
+        else:
+            if result.returncode != 0:
+                raise ConnectionError(result.stderr.decode.strip())
+            return "connected" in output, output
+        raise ConnectionError(errmsg)
+
+    def get_resolution(self):
+        """获取屏幕分辨率"""
+        cmd = f"adb -s {self.device_serial} exec-out wm size".split()
+        result = _sysrun(cmd)
+        w, h = result.stdout.decode().split("Physical size: ")[-1].split("x")
+        return (int(w), int(h))
+
+    def screecap(self):
+        """截图"""
+        cmd = f"adb -s {self.device_serial} exec-out screencap -p".split()
+        result = _sysrun(cmd)
+        img = Image.open(BytesIO(result.stdout))
+        return img
+
+    def long_tap(self, cord, duration):
+        """长按, duration单位为ms"""
+        cmd = f"adb -s {self.device_serial} exec-out input swipe {cord[0]} {cord[1]} {cord[0]} {cord[1]} {duration}".split()
+        result = _sysrun(cmd)
+        if result.returncode != 0:
+            raise LongTapError(result.stderr.decode.strip())
+
+
+if __name__ == '__main__':
+    adb = PyADB("48a666d9")
+    print(adb.get_resolution())
+    adb.screecap().show()
+    adb.long_tap((500, 1000), 200)
+    adb.connect('192.168.1.1')
