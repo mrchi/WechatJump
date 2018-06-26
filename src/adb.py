@@ -25,6 +25,9 @@ class ConnectionError(ADBError): pass
 class LongTapError(ADBError): pass
 
 
+class ShortTapError(ADBError): pass
+
+
 class PyADB:
 
     def __init__(self, device_serial):
@@ -58,17 +61,16 @@ class PyADB:
         img = Image.open(BytesIO(result.stdout))
         return img
 
+    def short_tap(self, cord):
+        """短按点击"""
+        cmd = f"adb -s {self.device_serial} exec-out input tap {cord[0]} {cord[1]}".split()
+        result = _sysrun(cmd)
+        if result.returncode != 0:
+            raise ShortTapError(result.stderr.decode.strip())
+
     def long_tap(self, cord, duration):
         """长按, duration单位为ms"""
         cmd = f"adb -s {self.device_serial} exec-out input swipe {cord[0]} {cord[1]} {cord[0]} {cord[1]} {duration}".split()
         result = _sysrun(cmd)
         if result.returncode != 0:
             raise LongTapError(result.stderr.decode.strip())
-
-
-if __name__ == '__main__':
-    adb = PyADB("48a666d9")
-    print(adb.get_resolution())
-    adb.screecap().show()
-    adb.long_tap((500, 1000), 200)
-    adb.connect('192.168.1.1')
