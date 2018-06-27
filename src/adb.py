@@ -54,7 +54,7 @@ class PyADB:
         w, h = result.stdout.decode().split("Physical size: ")[-1].split("x")
         return (int(w), int(h))
 
-    def screecap(self):
+    def screencap(self):
         """截图"""
         cmd = f"adb -s {self.device_serial} exec-out screencap -p".split()
         result = _sysrun(cmd)
