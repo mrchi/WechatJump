@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import time
+import math
 
 import cv2
 import numpy
@@ -29,15 +31,6 @@ class WechatJump:
         """点击再玩一局按钮"""
         self.adb.short_tap(self.again_btn)
 
-    def run(self):
-        # 读取图片
-        img = self.adb.screencap()
-        img = cv2.cvtColor(numpy.asarray(img), cv2.COLOR_RGB2GRAY)
-        piece_position = self.find_piece(img)
-        print(piece_position)
-        target_position = self.find_target_center(img)
-        print(target_position)
-
     def find_piece(self, img):
         """
         使用模版匹配寻找棋子位置。
@@ -63,16 +56,11 @@ class WechatJump:
         img = cv2.GaussianBlur(img, (5, 5), 0)
         img = cv2.Canny(img, 1, 10)
 
-        from PIL import Image
-        Image.fromarray(img).show()
-
         # 从 H/3 的位置开始遍历，避免分数和右上角小程序按钮的影响
         y_delta = self.resolution[1]//3
-
         # 上顶点的坐标
         y_top = numpy.nonzero([max(row) for row in img[y_delta:]])[0][0] + y_delta
         x = int(numpy.mean(numpy.nonzero(img[y_top])))
-
         # 下顶点的y坐标
         for y in range(y_top+10, self.resolution[1]*2//3):
             if img[y, x] != 0:
@@ -83,13 +71,19 @@ class WechatJump:
 
         return x, (y_top + y_bottom) // 2
 
-# 循环中
-    # 截图
-    # 判断游戏结束
-    # 获取小人位置
-    # 获取方块和下一个方块位置
-    # 计算按压时间
-    # 按压操作
+    def run(self):
+        while True:
+            # 读取图片
+            img = self.adb.screencap()
+            img = cv2.cvtColor(numpy.asarray(img), cv2.COLOR_RGB2GRAY)
+            piece_position = self.find_piece(img)
+            if not piece_position:
+                break
+            target_position = self.find_target_center(img)
+            distance = math.sqrt(sum((a-b)**2 for a, b in zip(piece_position, target_position)))
+            k = 1.36
+            self.adb.long_tap([i//2 for i in self.resolution], int(distance*k))
+            time.sleep(0.5)
 
 
 if __name__ == '__main__':
