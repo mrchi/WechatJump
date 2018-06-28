@@ -69,7 +69,7 @@ class WechatJump:
         # 有时棋子高度高于落脚点，去掉棋子对判断的影响
         for y in range(
                     self.piece_position[1]-self.piece_delta[1],
-                    self.piece_position[1],
+                    self.piece_position[1]+2,
                 ):
             for x in range(
                         self.piece_position[0]-self.piece_delta[0],
@@ -84,7 +84,7 @@ class WechatJump:
         x = int(numpy.mean(numpy.nonzero(img[y_top])))
         # 下顶点的y坐标
         for y in range(y_top+120, self.resolution[1]*2//3):
-            if img[y, x] != 0:
+            if img[y, x] != 0 or img[y, x-1] != 0:
                 y_bottom = y
                 break
         else:
