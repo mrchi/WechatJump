@@ -26,7 +26,9 @@ class WechatJump:
         self.start_btn = [int(v*k) for v, k in zip(self.resolution, START_BTN_POS)]
         self.again_btn = [int(v*k) for v, k in zip(self.resolution, AGAIN_BTN_POS)]
         self.piece = cv2.imread(PIECE_IMG_PATH, cv2.IMREAD_GRAYSCALE)
+        self.piece_delta = (38, 186)
         self.center = cv2.imread(CENTER_IMG_PATH, cv2.IMREAD_GRAYSCALE)
+        self.center_delta = (19, 11)
 
     def start_game(self):
         """点击开始游戏按钮"""
@@ -42,13 +44,10 @@ class WechatJump:
 
         必须使用当前分辨率下的棋子图片作为模版，否则模版与当前棋子大小不一致时匹配结果很差。
         """
-        # 当前分辨率下棋子模版中心点坐标偏移量
-        x_delta = 38
-        y_delta = 186
         result = cv2.matchTemplate(img, self.piece, cv2.TM_CCOEFF_NORMED)
         _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
         if maxVal > 0.8:
-            return (maxLoc[0]+x_delta, maxLoc[1]+y_delta)
+            return (maxLoc[0]+self.piece_delta[0], maxLoc[1]+self.piece_delta[1])
         else:
             return None
 
@@ -58,17 +57,25 @@ class WechatJump:
 
         边缘检测：灰度图像 -> 高斯模糊 -> Canny边缘检测。
         """
-        # 模版匹配寻找小白点
-        center_x_delta = 19
-        center_y_delta = 11
         result = cv2.matchTemplate(img, self.center, cv2.TM_CCOEFF_NORMED)
         _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
         if maxVal > 0.9:
-            return (maxLoc[0]+center_x_delta, maxLoc[1]+center_y_delta)
+            return (maxLoc[0]+self.center_delta[0], maxLoc[1]+self.center_delta[1])
 
         # 边缘检测
         img = cv2.GaussianBlur(img, (5, 5), 0)
         img = cv2.Canny(img, 1, 10)
+
+        # 有时棋子高度高于落脚点，去掉棋子对判断的影响
+        for y in range(
+                    self.piece_position[1]-self.piece_delta[1],
+                    self.piece_position[1],
+                ):
+            for x in range(
+                        self.piece_position[0]-self.piece_delta[0],
+                        self.piece_position[0]+self.piece_delta[0],
+                    ):
+                img[y][x] = 0
 
         # 从 H/3 的位置开始遍历，避免分数和右上角小程序按钮的影响
         y_delta = self.resolution[1]//3
@@ -91,8 +98,10 @@ class WechatJump:
             img_rgb = self.adb.screencap()
             img = cv2.cvtColor(numpy.asarray(img_rgb), cv2.COLOR_RGB2GRAY)
             self.piece_position = self.find_piece(img)
+            if not self.piece_position:
+                break
             self.target_position = self.find_target_center(img)
-            if not (self.piece_position and self.target_position):
+            if not self.target_position:
                 break
             self.show_img(img_rgb)
             distance = math.sqrt(
