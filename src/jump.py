@@ -59,7 +59,7 @@ class WechatJump:
         """
         result = cv2.matchTemplate(img, self.center, cv2.TM_CCOEFF_NORMED)
         _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
-        if maxVal > 0.9:
+        if maxVal > 0.85:
             return (maxLoc[0]+self.center_delta[0], maxLoc[1]+self.center_delta[1])
 
         # 边缘检测
