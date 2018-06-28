@@ -7,6 +7,7 @@ import math
 
 import cv2
 import numpy
+from PIL import ImageDraw
 
 from adb import PyADB
 
@@ -62,7 +63,7 @@ class WechatJump:
         y_top = numpy.nonzero([max(row) for row in img[y_delta:]])[0][0] + y_delta
         x = int(numpy.mean(numpy.nonzero(img[y_top])))
         # 下顶点的y坐标
-        for y in range(y_top+10, self.resolution[1]*2//3):
+        for y in range(y_top+50, self.resolution[1]*2//3):
             if img[y, x] != 0:
                 y_bottom = y
                 break
@@ -74,16 +75,44 @@ class WechatJump:
     def run(self):
         while True:
             # 读取图片
-            img = self.adb.screencap()
-            img = cv2.cvtColor(numpy.asarray(img), cv2.COLOR_RGB2GRAY)
-            piece_position = self.find_piece(img)
-            if not piece_position:
+            img_rgb = self.adb.screencap()
+            img = cv2.cvtColor(numpy.asarray(img_rgb), cv2.COLOR_RGB2GRAY)
+            self.piece_position = self.find_piece(img)
+            self.target_position = self.find_target_center(img)
+            if not (self.piece_position and self.target_position):
                 break
-            target_position = self.find_target_center(img)
-            distance = math.sqrt(sum((a-b)**2 for a, b in zip(piece_position, target_position)))
-            k = 1.36
-            self.adb.long_tap([i//2 for i in self.resolution], int(distance*k))
-            time.sleep(0.5)
+            self.show_img(img_rgb)
+            distance = math.sqrt(
+                sum(
+                    (a-b)**2 for a, b in zip(self.piece_position, self.target_position)
+                )
+            )
+            k = 1.365
+            duration = int(distance*k)
+            self.adb.long_tap([i//2 for i in self.resolution], duration)
+            time.sleep(1)
+
+    def show_img(self, img_rgb):
+        draw = draw =ImageDraw.Draw(img_rgb)
+        # 棋子中心点
+        draw.line(
+            (0, self.piece_position[1], self.resolution[0], self.piece_position[1]),
+            "#ff0000",
+        )
+        draw.line(
+            (self.piece_position[0], 0, self.piece_position[0], self.resolution[1]),
+            "#ff0000",
+        )
+        # 落脚点中心点
+        draw.line(
+            (0, self.target_position[1], self.resolution[0], self.target_position[1]),
+            "#0000ff",
+        )
+        draw.line(
+            (self.target_position[0], 0, self.target_position[0], self.resolution[1]),
+            "#0000ff",
+        )
+        img_rgb.show()
 
 
 if __name__ == '__main__':
