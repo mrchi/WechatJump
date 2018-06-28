@@ -14,7 +14,10 @@ from adb import PyADB
 
 START_BTN_POS = (0.5, 0.67)
 AGAIN_BTN_POS = (0.62, 0.79)
-PIECE_IMG_PATH = os.path.join(os.path.dirname(__file__), "../img/piece.png")
+IMG_PATH = os.path.join(os.path.dirname(__file__), "../img")
+PIECE_IMG_PATH = os.path.join(IMG_PATH, "piece.png")
+CENTER_IMG_PATH = os.path.join(IMG_PATH, "center.png")
+
 
 class WechatJump:
     def __init__(self, device_serial):
@@ -23,6 +26,7 @@ class WechatJump:
         self.start_btn = [int(v*k) for v, k in zip(self.resolution, START_BTN_POS)]
         self.again_btn = [int(v*k) for v, k in zip(self.resolution, AGAIN_BTN_POS)]
         self.piece = cv2.imread(PIECE_IMG_PATH, cv2.IMREAD_GRAYSCALE)
+        self.center = cv2.imread(CENTER_IMG_PATH, cv2.IMREAD_GRAYSCALE)
 
     def start_game(self):
         """点击开始游戏按钮"""
@@ -50,10 +54,19 @@ class WechatJump:
 
     def find_target_center(self, img):
         """
-        使用边缘检测寻找下一个落脚点中心位置。
+        先使用模版匹配寻找小白点，如果没有找到，再使用边缘检测寻找下一个落脚点中心位置。
 
-        灰度图像 -> 高斯模糊 -> Canny边缘检测。
+        边缘检测：灰度图像 -> 高斯模糊 -> Canny边缘检测。
         """
+        # 模版匹配寻找小白点
+        center_x_delta = 19
+        center_y_delta = 11
+        result = cv2.matchTemplate(img, self.center, cv2.TM_CCOEFF_NORMED)
+        _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
+        if maxVal > 0.9:
+            return (maxLoc[0]+center_x_delta, maxLoc[1]+center_y_delta)
+
+        # 边缘检测
         img = cv2.GaussianBlur(img, (5, 5), 0)
         img = cv2.Canny(img, 1, 10)
 
