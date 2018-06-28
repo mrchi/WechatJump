@@ -83,7 +83,7 @@ class WechatJump:
         y_top = numpy.nonzero([max(row) for row in img[y_delta:]])[0][0] + y_delta
         x = int(numpy.mean(numpy.nonzero(img[y_top])))
         # 下顶点的y坐标
-        for y in range(y_top+50, self.resolution[1]*2//3):
+        for y in range(y_top+120, self.resolution[1]*2//3):
             if img[y, x] != 0:
                 y_bottom = y
                 break
