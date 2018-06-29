@@ -99,9 +99,11 @@ class WechatJump:
             img = cv2.cvtColor(numpy.asarray(img_rgb), cv2.COLOR_RGB2GRAY)
             self.piece_position = self.find_piece(img)
             if not self.piece_position:
+                print("无法定位棋子")
                 break
             self.target_position = self.find_target_center(img)
             if not self.target_position:
+                print("无法定位落脚点")
                 break
             self.show_img(img_rgb)
             distance = math.sqrt(
@@ -110,9 +112,9 @@ class WechatJump:
                 )
             )
             k = 1.365
-            duration = int(distance*k)
+            duration = max(int(distance*k), 300)
             self.adb.long_tap([i//2 for i in self.resolution], duration)
-            time.sleep(1)
+            time.sleep(1.2)
 
     def show_img(self, img_rgb):
         draw = draw =ImageDraw.Draw(img_rgb)
