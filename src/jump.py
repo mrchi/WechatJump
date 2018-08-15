@@ -28,7 +28,7 @@ class WechatJump:
         self.piece = cv2.imread(PIECE_IMG_PATH, cv2.IMREAD_GRAYSCALE)
         self.piece_delta = (38, 186)
         self.center = cv2.imread(CENTER_IMG_PATH, cv2.IMREAD_GRAYSCALE)
-        self.center_delta = (19, 11)
+        self.center_delta = (19, 15)
 
     def start_game(self):
         """点击开始游戏按钮"""
