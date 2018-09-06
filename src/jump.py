@@ -38,16 +38,21 @@ class WechatJump:
         """点击再玩一局按钮"""
         self.adb.short_tap(self.again_btn)
 
+    def _match_template(self, img, tpl, threshold=0.8):
+        """opencv模版匹配，图像要先处理为灰度图像"""
+        result = cv2.matchTemplate(img, tpl, cv2.TM_CCOEFF_NORMED)
+        _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
+        return maxLoc if maxVal >= threshold else None
+
     def find_piece(self, img):
         """
         使用模版匹配寻找棋子位置。
 
         必须使用当前分辨率下的棋子图片作为模版，否则模版与当前棋子大小不一致时匹配结果很差。
         """
-        result = cv2.matchTemplate(img, self.piece, cv2.TM_CCOEFF_NORMED)
-        _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
-        if maxVal > 0.8:
-            return (maxLoc[0]+self.piece_delta[0], maxLoc[1]+self.piece_delta[1])
+        match_pos = self._match_template(img, self.piece)
+        if match_pos:
+            return (match_pos[0]+self.piece_delta[0], match_pos[1]+self.piece_delta[1])
         else:
             return None
 
@@ -57,10 +62,9 @@ class WechatJump:
 
         边缘检测：灰度图像 -> 高斯模糊 -> Canny边缘检测。
         """
-        result = cv2.matchTemplate(img, self.center, cv2.TM_CCOEFF_NORMED)
-        _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
-        if maxVal > 0.85:
-            return (maxLoc[0]+self.center_delta[0], maxLoc[1]+self.center_delta[1])
+        match_pos = self._match_template(img, self.center, 0.85)
+        if match_pos:
+            return (match_pos[0]+self.center_delta[0], match_pos[1]+self.center_delta[1])
 
         # 边缘检测
         img = cv2.GaussianBlur(img, (5, 5), 0)
@@ -117,7 +121,7 @@ class WechatJump:
             time.sleep(1.2)
 
     def show_img(self, img_rgb):
-        draw = draw =ImageDraw.Draw(img_rgb)
+        draw = ImageDraw.Draw(img_rgb)
         # 棋子中心点
         draw.line(
             (0, self.piece_position[1], self.resolution[0], self.piece_position[1]),
