@@ -44,7 +44,7 @@ class WechatJump:
         _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
         return maxLoc if maxVal >= threshold else None
 
-    def find_piece(self, img):
+    def get_piece_pos(self, img):
         """
         使用模版匹配寻找棋子位置。
 
@@ -56,9 +56,10 @@ class WechatJump:
         else:
             return None
 
-    def find_target_center(self, img):
+    def get_target_pos(self, img):
         """
-        先使用模版匹配寻找小白点，如果没有找到，再使用边缘检测寻找下一个落脚点中心位置。
+        优先使用模版匹配寻找小白点，如果没有找到，再使用边缘检测寻找目标棋盘中心坐标。
+        并把棋盘图像保留下来，供下一轮循环寻找起始棋盘中心坐标时，做模版匹配。
 
         边缘检测：灰度图像 -> 高斯模糊 -> Canny边缘检测。
         """
@@ -101,11 +102,11 @@ class WechatJump:
             # 读取图片
             img_rgb = self.adb.screencap()
             img = cv2.cvtColor(numpy.asarray(img_rgb), cv2.COLOR_RGB2GRAY)
-            self.piece_position = self.find_piece(img)
+            self.piece_position = self.get_piece_pos(img)
             if not self.piece_position:
                 print("无法定位棋子")
                 break
-            self.target_position = self.find_target_center(img)
+            self.target_position = self.get_target_pos(img)
             if not self.target_position:
                 print("无法定位落脚点")
                 break
