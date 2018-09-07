@@ -62,14 +62,14 @@ class PyADB:
         return img
 
     def short_tap(self, cord):
-        """短按点击"""
+        """短按点击，坐标为 (x, y) 格式"""
         cmd = f"adb -s {self.device_serial} exec-out input tap {cord[0]} {cord[1]}".split()
         result = _sysrun(cmd)
         if result.returncode != 0:
             raise ShortTapError(result.stderr.decode.strip())
 
     def long_tap(self, cord, duration):
-        """长按, duration单位为ms"""
+        """长按, duration单位为ms，坐标为 (x, y) 格式"""
         cmd = f"adb -s {self.device_serial} exec-out input swipe {cord[0]} {cord[1]} {cord[0]} {cord[1]} {duration}".split()
         result = _sysrun(cmd)
         if result.returncode != 0:
