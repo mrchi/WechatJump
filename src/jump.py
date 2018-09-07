@@ -131,15 +131,15 @@ class WechatJump:
 
     def get_start_pos(self, img):
         """通过模版匹配，获取起始棋盘中心坐标"""
+        self.start_pos = NULL_POS
         if hasattr(self, "target_img"):
             match_pos = self.match_template(img, self.target_img, 0.7)
             if match_pos.any():
                 shape = self.target_img.shape
-                self.start_pos = match_pos + np.array([shape[1]//2, 0])
-            else:
-                self.start_pos = NULL_POS
-        else:
-            self.start_pos = NULL_POS
+                start_pos = match_pos + np.array([shape[1]//2, 0])
+                # 如果坐标与当前棋子坐标差距过大，则认为有问题，丢弃
+                if (np.abs(start_pos-self.piece_pos) < np.array([100, 100])).all():
+                    self.start_pos = start_pos
         return self.start_pos
 
     def run(self):
