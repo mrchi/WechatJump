@@ -12,7 +12,8 @@ from PIL import ImageDraw, ImageFont
 from adb import PyADB
 
 NULL_POS = np.array([0, 0])
-
+k = 1.3038
+b = 54.8644
 
 class WechatJump:
     """ 所有的坐标都是 (x, y) 格式的，但是在 opencv 的数组中是 (y, x) 格式的"""
@@ -22,9 +23,9 @@ class WechatJump:
         self.start_btn = self.resolution * np.array([0.5, 0.67])
         self.again_btn = self.resolution * np.array([0.62, 0.79])
         self.top_chart_back_btn = self.resolution * np.array([0.07, 0.87])
-        self.piece = cv2.imread("../img/piece.png", cv2.IMREAD_GRAYSCALE)
+        self.piece = cv2.imread("../assests/piece.png", cv2.IMREAD_GRAYSCALE)
         self.piece_delta = np.array([38, 186])
-        self.center = cv2.imread("../img/center.png", cv2.IMREAD_GRAYSCALE)
+        self.center = cv2.imread("../assests/center.png", cv2.IMREAD_GRAYSCALE)
         self.center_delta = np.array([19, 15])
 
     def start_game(self):
@@ -207,8 +208,6 @@ class WechatJump:
         self.jump_right = self.piece_pos[0] < self.target_pos[0]
         # 计算棋子和目标棋盘距离
         self.distance = self.calc_distance(self.piece_pos, self.target_pos, self.jump_right)
-        k = 1.2708
-        b = 74.3367
         self.duration = int(round(self.distance * k + b))
         self.adb.long_tap(self.resolution // 2, self.duration)
 
@@ -268,8 +267,8 @@ class WechatJump:
             self.get_target_img(img)
             self.review_last_jump()
             self.jump()
-            self.show_img(img_rgb)
-            time.sleep(1)
+            # self.show_img(img_rgb)
+            time.sleep(1.3)
 
 if __name__ == '__main__':
     wj = WechatJump("48a666d9")
