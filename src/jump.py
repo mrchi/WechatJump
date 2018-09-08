@@ -46,7 +46,10 @@ class WechatJump:
     @staticmethod
     def calc_distance(a, b, jump_right):
         """在倾斜角 30 度方向上投影的距离。"""
-        distance = abs(a[0]-b[0]) / math.sqrt(3) + abs(a[1]-b[1])
+        if jump_right:
+            distance = abs((a[1]-b[1]) - (a[0]-b[0]) / math.sqrt(3))
+        else:
+            distance = abs((a[1]-b[1]) + (a[0]-b[0]) / math.sqrt(3))
 
         # 欧式距离
         # distance = np.sqrt(np.sum(np.square(a-b)))
