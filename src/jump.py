@@ -7,7 +7,7 @@ import math
 
 import cv2
 import numpy as np
-from PIL import ImageDraw
+from PIL import ImageDraw, ImageFont
 
 from adb import PyADB
 
@@ -21,6 +21,7 @@ class WechatJump:
         self.resolution = np.array(self.adb.get_resolution())
         self.start_btn = self.resolution * np.array([0.5, 0.67])
         self.again_btn = self.resolution * np.array([0.62, 0.79])
+        self.top_chart_back_btn = self.resolution * np.array([0.07, 0.87])
         self.piece = cv2.imread("../img/piece.png", cv2.IMREAD_GRAYSCALE)
         self.piece_delta = np.array([38, 186])
         self.center = cv2.imread("../img/center.png", cv2.IMREAD_GRAYSCALE)
@@ -32,6 +33,7 @@ class WechatJump:
 
     def another_game(self):
         """点击再玩一局按钮"""
+        self.adb.short_tap(self.top_chart_back_btn)
         self.adb.short_tap(self.again_btn)
 
     @staticmethod
@@ -40,6 +42,41 @@ class WechatJump:
         result = cv2.matchTemplate(img, tpl, cv2.TM_CCOEFF_NORMED)
         _, maxVal, _, maxLoc = cv2.minMaxLoc(result)
         return np.array(maxLoc) if maxVal >= threshold else NULL_POS
+
+    @staticmethod
+    def calc_distance(a, b, jump_right):
+        """在倾斜角 30 度方向上投影的距离。"""
+        distance = abs(a[0]-b[0]) / math.sqrt(3) + abs(a[1]-b[1])
+
+        # 欧式距离
+        # distance = np.sqrt(np.sum(np.square(a-b)))
+
+        return distance
+
+    def match_center_tpl(self, img):
+        """使用模版匹配寻找小白点，小白点在跳中棋盘中心后出现。"""
+        match_pos = self.match_template(img, self.center)
+        if match_pos.any():
+            self.target_pos = match_pos + self.center_delta
+        else:
+            self.target_pos = NULL_POS
+        return self.target_pos
+
+    def init_attrs(self):
+        """初始化变量"""
+        self.last_distance = self.distance if hasattr(self, "distance") else None
+        self.distance = None
+        self.last_duration = self.duration if hasattr(self, "duration") else None
+        self.duration = None
+        self.last_jump_right = self.jump_right if hasattr(self, "jump_right") else None
+        self.jump_right = None
+        self.last_target_img = self.target_img if hasattr(self, "target_img") else NULL_POS
+        self.target_img = NULL_POS
+        self.piece_pos = NULL_POS
+        self.target_pos = NULL_POS
+        self.start_pos = NULL_POS
+        self.top_pos = NULL_POS
+        self.last_actual_distance = None
 
     def get_piece_pos(self, img):
         """
@@ -52,26 +89,6 @@ class WechatJump:
             raise ValueError("无法定位棋子")
         self.piece_pos =  match_pos + self.piece_delta
         return self.piece_pos
-
-    def match_center_tpl(self, img):
-        """使用模版匹配寻找小白点，小白点在跳中棋盘中心后出现。"""
-        match_pos = self.match_template(img, self.center)
-        if match_pos.any():
-            self.target_pos = match_pos + self.center_delta
-        else:
-            self.target_pos = NULL_POS
-        return self.target_pos
-
-    def get_target_img(self, img):
-        """获取当前目标棋盘的图像。"""
-        half_height = self.target_pos[1] - self.top_pos[1]
-        # 0.57735 是 tan 30 的约数
-        half_width = int(half_height/0.57735)
-        self.target_img = img[
-            self.target_pos[1]: self.target_pos[1]+half_height+100,
-            self.target_pos[0]-half_width: self.target_pos[0]+half_width,
-        ]
-        return self.target_img
 
     def get_target_pos(self, img):
         """
@@ -110,10 +127,10 @@ class WechatJump:
             raise ValueError("无法定位目标棋盘上顶点")
 
         # 上顶点的 x 坐标，也是中心点的 x 坐标
-        x = int(np.mean(np.nonzero(img[y_top])))
+        x = int(round(np.mean(np.nonzero(img[y_top]))))
         self.top_pos = np.array([x, y_top])
 
-        # 如果模版匹配已经找到了目标棋盘中心点，就不需要继续操作了。
+        # 如果模版匹配已经找到了目标棋盘中心点，就不需要再继续寻找下顶点继而确定中心点
         if self.target_pos.any():
             return self.target_pos
 
@@ -131,36 +148,66 @@ class WechatJump:
 
     def get_start_pos(self, img):
         """通过模版匹配，获取起始棋盘中心坐标"""
-        self.start_pos = NULL_POS
-        if hasattr(self, "target_img"):
-            match_pos = self.match_template(img, self.target_img, 0.7)
+        if self.last_target_img.any():
+            match_pos = self.match_template(img, self.last_target_img, 0.7)
             if match_pos.any():
-                shape = self.target_img.shape
+                shape = self.last_target_img.shape
                 start_pos = match_pos + np.array([shape[1]//2, 0])
                 # 如果坐标与当前棋子坐标差距过大，则认为有问题，丢弃
                 if (np.abs(start_pos-self.piece_pos) < np.array([100, 100])).all():
                     self.start_pos = start_pos
         return self.start_pos
 
-    def run(self):
-        while True:
-            # 读取图片
-            img_rgb = self.adb.screencap()
-            img = cv2.cvtColor(np.asarray(img_rgb), cv2.COLOR_RGB2GRAY)
-            self.get_piece_pos(img)
-            self.get_target_pos(img)
-            self.get_start_pos(img)
-            self.get_target_img(img)
-            self.show_img(img_rgb)
-            distance = math.sqrt(
-                sum(
-                    (a-b)**2 for a, b in zip(self.piece_pos, self.target_pos)
-                )
-            )
-            k = 1.365
-            duration = max(int(distance*k), 300)
-            self.adb.long_tap([i//2 for i in self.resolution], duration)
-            time.sleep(1.2)
+    def review_last_jump(self):
+        """评估上次跳跃参数，计算实际跳跃距离。"""
+        # 如果这些属性不存在，就无法进行评估
+        if self.last_distance \
+                and self.last_duration \
+                and self.start_pos.any() \
+                and self.last_jump_right is not None:
+            pass
+        else:
+            return
+
+        # 计算棋子和当前棋盘中心的距离
+        d = self.calc_distance(self.start_pos, self.piece_pos, self.last_jump_right)
+
+        # 向右跳跃，x 坐标：棋子>=当前棋盘中心，实际距离应加上 d
+        # 向左跳跃，x 坐标：棋子<=当前棋盘中心，实际距离应加上 d
+        if self.last_jump_right and self.piece_pos[0] >= self.start_pos[0] \
+                or not self.last_jump_right and self.piece_pos[0] <= self.start_pos[0]:
+            self.last_actual_distance = self.last_distance + d
+        # 向右跳跃，x 坐标：棋子<当前棋盘中心，实际距离应减去 d
+        # 向左跳跃，x 坐标：棋子>当前棋盘中心，实际距离应减去 d
+        elif self.last_jump_right and self.piece_pos[0] < self.start_pos[0] \
+                or not self.last_jump_right and self.piece_pos[0] > self.start_pos[0]:
+            self.last_actual_distance = self.last_distance - d
+        else:
+            raise ValueError("未知情况")
+
+        print(self.last_actual_distance, self.last_duration)
+
+    def get_target_img(self, img):
+        """获取当前目标棋盘的图像。"""
+        half_height = self.target_pos[1] - self.top_pos[1]
+        # 0.57735 是 tan 30 的约数
+        half_width = int(round(half_height * math.sqrt(3)))
+        self.target_img = img[
+            self.target_pos[1]: self.target_pos[1]+half_height+100,
+            self.target_pos[0]-half_width: self.target_pos[0]+half_width,
+        ]
+        return self.target_img
+
+    def jump(self):
+        """跳跃，并存储本次目标跳跃距离和按压时间"""
+        # 计算跳跃方向
+        self.jump_right = self.piece_pos[0] < self.target_pos[0]
+        # 计算棋子和目标棋盘距离
+        self.distance = self.calc_distance(self.piece_pos, self.target_pos, self.jump_right)
+        k = 1.2708
+        b = 74.3367
+        self.duration = int(round(self.distance * k + b))
+        self.adb.long_tap(self.resolution // 2, self.duration)
 
     def show_img(self, img_rgb):
         draw = ImageDraw.Draw(img_rgb)
@@ -191,8 +238,35 @@ class WechatJump:
             (self.start_pos[0], 0, self.start_pos[0], self.resolution[1]),
             "#000000",
         )
+
+        if hasattr(self, "jump_right"):
+            draw.multiline_text(
+                (50, 50),
+                "\n".join([
+                    f"上次向右跳跃: {self.last_jump_right}",
+                    f"上次跳跃距离: {self.last_distance}",
+                    f"上次修正距离: {self.last_actual_distance}",
+                    f"上次按压时间: {self.last_duration}",
+                ]),
+                fill='#000000',
+                font=ImageFont.truetype("../assests/font.ttf", 50)
+            )
         img_rgb.show()
 
+    def run(self):
+        while True:
+            # 读取图片
+            img_rgb = self.adb.screencap()
+            img = cv2.cvtColor(np.asarray(img_rgb), cv2.COLOR_RGB2GRAY)
+            self.init_attrs()
+            self.get_piece_pos(img)
+            self.get_target_pos(img)
+            self.get_start_pos(img)
+            self.get_target_img(img)
+            self.review_last_jump()
+            self.jump()
+            self.show_img(img_rgb)
+            time.sleep(1)
 
 if __name__ == '__main__':
     wj = WechatJump("48a666d9")
