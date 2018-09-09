@@ -255,20 +255,18 @@ class WechatJump:
             "#000000",
         )
 
-        if hasattr(self, "jump_right"):
-            draw.multiline_text(
-                (50, 50),
-                "\n".join([
-                    f"上次向右跳跃: {self.last_jump_right}",
-                    f"上次落点中心: {self.on_center}",
-                    f"上次跳跃距离: {self.last_distance}",
-                    f"上次修正距离: {self.last_actual_distance}",
-                    f"上次按压时间: {self.last_duration}",
-                ]),
-                fill='#000000',
-                font=ImageFont.truetype("../assests/font.ttf", 50)
-            )
-        img_rgb.show()
+        draw.multiline_text(
+            (50, 50),
+            "\n".join([
+                f"上次向右跳跃: {self.last_jump_right}",
+                f"上次落点中心: {self.on_center}",
+                f"上次跳跃距离: {self.last_distance}",
+                f"上次修正距离: {self.last_actual_distance}",
+                f"上次按压时间: {self.last_duration}",
+            ]),
+            fill='#000000',
+            font=ImageFont.truetype("../assests/font.ttf", 50)
+        )
 
     def run(self):
         while True:
@@ -281,9 +279,11 @@ class WechatJump:
             self.get_start_pos(img)
             self.get_target_img(img)
             self.review_last_jump()
+            # img_rgb.save("../tmp/origin.png")
+            # self.mark_img(img_rgb)
+            # img_rgb.save("../tmp/marked.png")
             self.jump()
-            # self.show_img(img_rgb)
-            time.sleep(self.duration/20000+1.1)
+            time.sleep(self.duration/5000+1.1)
 
 if __name__ == '__main__':
     wj = WechatJump("48a666d9")
