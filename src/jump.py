@@ -10,15 +10,17 @@ import numpy as np
 from PIL import ImageDraw, ImageFont
 
 from adb import PyADB
+from model import MachineLearningModel
 
 NULL_POS = np.array([0, 0])
-k = 1.3038
-b = 54.8644
+
 
 class WechatJump:
     """ 所有的坐标都是 (x, y) 格式的，但是在 opencv 的数组中是 (y, x) 格式的"""
     def __init__(self, device_serial):
         self.adb = PyADB(device_serial)
+        self.model = MachineLearningModel()
+        self.model.train_polynomial_regression_model(degree=6)
         self.resolution = np.array(self.adb.get_resolution())
         self.start_btn = self.resolution * np.array([0.5, 0.67])
         self.again_btn = self.resolution * np.array([0.62, 0.79])
@@ -219,10 +221,11 @@ class WechatJump:
         """跳跃，并存储本次目标跳跃距离和按压时间"""
         # 计算棋子和目标棋盘距离
         self.distance = self.calc_distance(self.piece_pos, self.target_pos, self.jump_right)
-        self.duration = int(round(self.distance * k + b))
+        # self.duration = int(round(self.distance * k + b))
+        self.duration = int(round(self.model.predict(self.distance)))
         self.adb.long_tap(self.resolution // 2, self.duration)
 
-    def show_img(self, img_rgb):
+    def mark_img(self, img_rgb):
         draw = ImageDraw.Draw(img_rgb)
         # 棋子中心点
         draw.line(
