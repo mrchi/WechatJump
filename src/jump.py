@@ -113,8 +113,8 @@ class WechatJump:
         # 有时棋子高度高于落脚点，为去掉棋子对判断的影响，抹掉棋子的边缘，将像素值置为0
         # 这里数组的索引是 img[y1:y2, x1:x2] 的形式
         img[
-            self.piece_pos[1]-self.piece_delta[1]:self.piece_pos[1]+2,
-            self.piece_pos[0]-self.piece_delta[0]:self.piece_pos[0]+self.piece_delta[0],
+            self.piece_pos[1]-self.piece_delta[1]-2: self.piece_pos[1]+2,
+            self.piece_pos[0]-self.piece_delta[0]-2: self.piece_pos[0]+self.piece_delta[0]+2,
         ] = 0
 
         # 为避免屏幕上半部分分数和小程序按钮的影响
