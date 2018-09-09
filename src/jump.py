@@ -25,7 +25,8 @@ class WechatJump:
         self.top_chart_back_btn = self.resolution * np.array([0.07, 0.87])
         self.piece = cv2.imread("../assests/piece.png", cv2.IMREAD_GRAYSCALE)
         self.piece_delta = np.array([38, 186])
-        self.center = cv2.imread("../assests/center.png", cv2.IMREAD_GRAYSCALE)
+        self.center_black = cv2.imread("../assests/center_black.png", cv2.IMREAD_GRAYSCALE)
+        self.center_white = cv2.imread("../assests/center_white.png", cv2.IMREAD_GRAYSCALE)
         self.center_delta = np.array([19, 15])
 
     def start_game(self):
@@ -59,11 +60,17 @@ class WechatJump:
 
     def match_center_tpl(self, img):
         """使用模版匹配寻找小白点，小白点在跳中棋盘中心后出现。"""
-        match_pos = self.match_template(img, self.center)
-        if match_pos.any():
-            self.target_pos = match_pos + self.center_delta
+        black_match_pos = self.match_template(img, self.center_black)
+        white_match_pos = self.match_template(img, self.center_white)
+        if black_match_pos.any():
+            self.target_pos = black_match_pos + self.center_delta
+            self.on_center = True
+        elif white_match_pos.any():
+            self.target_pos = white_match_pos + self.center_delta
+            self.on_center = True
         else:
             self.target_pos = NULL_POS
+            self.on_center = False
         return self.target_pos
 
     def init_attrs(self):
@@ -81,6 +88,7 @@ class WechatJump:
         self.start_pos = NULL_POS
         self.top_pos = NULL_POS
         self.last_actual_distance = None
+        self.on_center = None
 
     def get_piece_pos(self, img):
         """
@@ -88,7 +96,7 @@ class WechatJump:
 
         必须使用当前分辨率下的棋子图片作为模版，否则模版与当前棋子大小不一致时匹配结果很差。
         """
-        match_pos = self.match_template(img, self.piece)
+        match_pos = self.match_template(img, self.piece, 0.7)
         if not match_pos.any():
             raise ValueError("无法定位棋子")
         self.piece_pos =  match_pos + self.piece_delta
@@ -142,8 +150,8 @@ class WechatJump:
         if self.target_pos.any():
             return self.target_pos
 
-        # 下顶点的 y 坐标，+130 是为了消除多圆环类棋盘的干扰
-        for y in range(y_top+130, y_stop):
+        # 下顶点的 y 坐标，+40是为了消除多圆环类棋盘的干扰
+        for y in range(y_top+40, y_stop):
             if img[y, x] or img[y, x-1]:
                 y_bottom = y
                 break
@@ -172,6 +180,7 @@ class WechatJump:
         if self.last_distance \
                 and self.last_duration \
                 and self.start_pos.any() \
+                and self.on_center \
                 and self.last_jump_right is not None:
             pass
         else:
@@ -248,6 +257,7 @@ class WechatJump:
                 (50, 50),
                 "\n".join([
                     f"上次向右跳跃: {self.last_jump_right}",
+                    f"上次落点中心: {self.on_center}",
                     f"上次跳跃距离: {self.last_distance}",
                     f"上次修正距离: {self.last_actual_distance}",
                     f"上次按压时间: {self.last_duration}",
@@ -270,7 +280,7 @@ class WechatJump:
             self.review_last_jump()
             self.jump()
             # self.show_img(img_rgb)
-            time.sleep(1.3)
+            time.sleep(self.duration/20000+1.1)
 
 if __name__ == '__main__':
     wj = WechatJump("48a666d9")
