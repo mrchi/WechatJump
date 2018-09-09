@@ -92,6 +92,10 @@ class WechatJump:
         if not match_pos.any():
             raise ValueError("无法定位棋子")
         self.piece_pos =  match_pos + self.piece_delta
+
+        # 计算跳跃方向
+        self.jump_right = self.piece_pos[0] < self.resolution[0] // 2
+
         return self.piece_pos
 
     def get_target_pos(self, img):
@@ -204,8 +208,6 @@ class WechatJump:
 
     def jump(self):
         """跳跃，并存储本次目标跳跃距离和按压时间"""
-        # 计算跳跃方向
-        self.jump_right = self.piece_pos[0] < self.target_pos[0]
         # 计算棋子和目标棋盘距离
         self.distance = self.calc_distance(self.piece_pos, self.target_pos, self.jump_right)
         self.duration = int(round(self.distance * k + b))
