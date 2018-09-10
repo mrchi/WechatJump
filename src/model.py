@@ -1,45 +1,50 @@
 # coding=utf-8
 
 import numpy as np
-from sklearn import linear_model, preprocessing
-import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+
+__all__ = ["MachineLearningModel"]
 
 
 class MachineLearningModel:
     """机器学习回归分析"""
-    def __init__(self):
-        self.read_training_datasets()
+    def __init__(self, dataset_file, only_center=False):
+        self.read_training_datasets(dataset_file, only_center)
 
-    def read_training_datasets(self):
+    def read_training_datasets(self, dataset_file, only_center=False):
         """读取训练数据"""
-        with open("./training.txt", "r") as f:
+        with open(dataset_file, "r") as f:
             data = f.readlines()
 
-        datasets_X = []
-        datasets_Y = []
+        dataset_X = []
+        dataset_Y = []
 
         for line in data:
             line = line.strip()
             if not line:
                 continue
-            x, y = line.split()
-            datasets_X.append(float(x))
-            datasets_Y.append(int(y))
+            x, y, z = line.split()
+            # 只取跳中了中心的数据
+            if only_center and z == "False":
+                continue
+            dataset_X.append(float(x))
+            dataset_Y.append(int(y))
 
-        self.datasets_X = np.array(datasets_X).reshape([len(datasets_X), 1])
-        self.datasets_Y = np.array(datasets_Y)
+        self.dataset_X = np.array(dataset_X).reshape([len(dataset_X), 1])
+        self.dataset_Y = np.array(dataset_Y)
 
     def train_linear_regression_model(self):
         """训练线性回归模型"""
-        linear = linear_model.LinearRegression()
-        linear.fit(self.datasets_X, self.datasets_Y)
+        linear = LinearRegression()
+        linear.fit(self.dataset_X, self.dataset_Y)
         self.predict = lambda x: linear.predict(x)[0]
 
-    def train_polynomial_regression_model(self, degree=5):
+    def train_polynomial_regression_model(self, degree):
         """训练多项式回归模型"""
-        poly_feat = preprocessing.PolynomialFeatures(degree=degree)
-        x_tranformed = poly_feat.fit_transform(self.datasets_X)
-        linear = linear_model.LinearRegression()
-        linear.fit(x_tranformed, self.datasets_Y)
+        poly_feat = PolynomialFeatures(degree=degree)
+        x_tranformed = poly_feat.fit_transform(self.dataset_X)
+        linear = LinearRegression()
+        linear.fit(x_tranformed, self.dataset_Y)
         self.predict = lambda x: linear.predict(poly_feat.transform(x))[0]
 

@@ -55,7 +55,7 @@ class PyADB:
         return (int(w), int(h))
 
     def screencap(self):
-        """截图"""
+        """截图，输出为 Pillow.Image 对象"""
         cmd = f"adb -s {self.device_serial} exec-out screencap -p".split()
         result = _sysrun(cmd)
         img = Image.open(BytesIO(result.stdout))
