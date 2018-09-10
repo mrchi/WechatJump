@@ -47,4 +47,3 @@ class MachineLearningModel:
         linear = LinearRegression()
         linear.fit(x_tranformed, self.dataset_Y)
         self.predict = lambda x: linear.predict(poly_feat.transform(x))[0]
-

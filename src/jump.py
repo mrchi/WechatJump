@@ -114,7 +114,7 @@ class WechatJump:
         match_pos = self.match_template(img, self.piece, 0.7)
         if not match_pos.any():
             raise ValueError("无法定位棋子")
-        self.piece_pos =  match_pos + self.piece_delta
+        self.piece_pos = match_pos + self.piece_delta
 
         # 计算跳跃方向。若棋子在图片左侧半区，则向右跳跃（不存在在中线上的情况）
         self.jump_right = self.piece_pos[0] < self.resolution[0] // 2
@@ -253,11 +253,11 @@ class WechatJump:
             (20, 20),
             "\n".join([
                 "[上次跳跃数据]",
-                f"向右跳跃: {self.last_jump_right}",
-                f"落点在中心: {self.on_center}",
-                f"应跳跃距离: {self.last_distance}",
-                f"实跳跃距离: {self.last_actual_distance}",
-                f"按压时间: {self.last_duration}",
+                f"向右跳跃: {self.last_jump_right}",            # noqa
+                f"落点在中心: {self.on_center}",                 # noqa
+                f"应跳跃距离: {self.last_distance}",             # noqa
+                f"实跳跃距离: {self.last_actual_distance}",      # noqa
+                f"按压时间: {self.last_duration}",              # noqa
             ]),
             fill='#000000',
             font=ImageFont.truetype(TTF_FONT_FILE, 45)

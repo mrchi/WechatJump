@@ -16,16 +16,20 @@ _sysrun = functools.partial(
 )
 
 
-class ADBError(Exception): pass
+class ADBError(Exception):
+    pass
 
 
-class ConnectionError(ADBError): pass
+class ConnectionError(ADBError):
+    pass
 
 
-class LongTapError(ADBError): pass
+class LongTapError(ADBError):
+    pass
 
 
-class ShortTapError(ADBError): pass
+class ShortTapError(ADBError):
+    pass
 
 
 class PyADB:
@@ -35,7 +39,7 @@ class PyADB:
 
     def connect(self, ip, port=5555):
         """连接网络adb调试设备"""
-        cmd = f"adb -s {self.device_serial} connect {ip}:{port}".split()
+        cmd = f"adb -s {self.device_serial} connect {ip}:{port}".split()    # noqa
         try:
             result = _sysrun(cmd, timeout=2)
             returncode = result.returncode
