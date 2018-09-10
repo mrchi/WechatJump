@@ -182,29 +182,27 @@ class WechatJump:
         if self.last_distance \
                 and self.last_duration \
                 and self.start_pos.any() \
-                and self.on_center \
                 and self.last_jump_right is not None:
             pass
         else:
             return
 
-        # 计算棋子和当前棋盘中心的距离
+        # 计算棋子和起始棋盘中心的偏差距离
         d = self.calc_distance(self.start_pos, self.piece_pos, self.last_jump_right)
 
-        # 向右跳跃，x 坐标：棋子>=当前棋盘中心，实际距离应加上 d
-        # 向左跳跃，x 坐标：棋子<=当前棋盘中心，实际距离应加上 d
-        if self.last_jump_right and self.piece_pos[0] >= self.start_pos[0] \
-                or not self.last_jump_right and self.piece_pos[0] <= self.start_pos[0]:
-            self.last_actual_distance = self.last_distance + d
-        # 向右跳跃，x 坐标：棋子<当前棋盘中心，实际距离应减去 d
-        # 向左跳跃，x 坐标：棋子>当前棋盘中心，实际距离应减去 d
-        elif self.last_jump_right and self.piece_pos[0] < self.start_pos[0] \
-                or not self.last_jump_right and self.piece_pos[0] > self.start_pos[0]:
+        # 计算实际跳跃距离，这里要分情况讨论跳过头和没跳到两种情况讨论
+        k = 1 / math.sqrt(3) if self.last_jump_right else -1 / math.sqrt(3)
+        # 没跳到，实际距离 = 上次测量距离 - 偏差距离
+        if self.piece_pos[1] > k*(self.piece_pos[0]-self.start_pos[0]) + self.start_pos[1]:
             self.last_actual_distance = self.last_distance - d
+        # 跳过头，实际距离 = 上次测量距离 + 偏差距离
+        elif self.piece_pos[1] < k*(self.piece_pos[0]-self.start_pos[0]) + self.start_pos[1]:
+            self.last_actual_distance = self.last_distance + d
+        # 刚刚好
         else:
-            raise ValueError("未知情况")
+            self.last_actual_distance = self.last_distance
 
-        print(self.last_actual_distance, self.last_duration)
+        print(self.last_actual_distance, self.last_duration, self.on_center)
 
     def get_target_img(self, img):
         """获取当前目标棋盘的图像。"""
