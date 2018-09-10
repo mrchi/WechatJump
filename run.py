@@ -23,7 +23,7 @@ if __name__ == '__main__':
     adb = PyADB(ADB_DEVICE_SERIAL)
 
     # 训练回归模型
-    model = MachineLearningModel(TRAINING_DATASET)
+    model = MachineLearningModel(TRAINING_DATASET, only_center=True)
     if TRAINING_MODEL == "LR":
         model.train_linear_regression_model()
     elif TRAINING_MODEL == "PR":
