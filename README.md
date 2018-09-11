@@ -35,7 +35,7 @@ adb + pillow + opencv + sklearn 实现的微信跳一跳机器人，分数可达
 
 ## 环境准备
 
-- 安装 OpenCV 和 adb 工具，MacOS 可以使用 brew 安装，其他系统请参考 OpenCV：
+- 安装 OpenCV 和 adb 工具，MacOS 可以使用 brew 安装，其他系统请参考 [OpenCV 文档](https://docs.opencv.org/3.4.3/da/df6/tutorial_py_table_of_contents_setup.html) 和 [Android 调试桥](https://developer.android.com/studio/command-line/adb?hl=zh-cn)：
 
 ```
 brew install opencv
